@@ -360,23 +360,23 @@ private fun formatSeconds(seconds: Long?): String {
             EmptyState("Profile not loaded", "Tap Refresh to fetch your Chaster account profile.")
         } else {
             val fields = profile.apiDetails
-            ProfileInfoSection("Account details", fields.filter { (key, _) ->
+            ProfileInfoSection("Account", fields.filter { (key, _) ->
                 val k = key.lowercase()
                 listOf("username", "name", "email", "id", "role", "language", "timezone", "description", "created", "member").any { it in k }
             }, listOf("username", "name", "email", "id", "role", "language", "timezone", "description", "created", "member")) {
                 DetailRow("Username", profile.username, compact = true)
                 profile.email?.let { DetailRow("Email", it, compact = true) }
             }
-            ProfileInfoSection("Session statistics", fields.filter { (key, _) ->
+            ProfileInfoSection("Sessions", fields.filter { (key, _) ->
                 listOf("session", "lock", "duration", "lastactivity", "last_activity", "history").any { it in key.lowercase() }
             })
-            ProfileInfoSection("Ratings and account", fields.filter { (key, _) ->
+            ProfileInfoSection("Ratings", fields.filter { (key, _) ->
                 listOf("rating", "subscription", "financial", "verified", "discord").any { it in key.lowercase() }
             })
-            ProfileInfoSection("Profile visibility", fields.filter { (key, _) ->
+            ProfileInfoSection("Visibility", fields.filter { (key, _) ->
                 listOf("visible", "visibility", "privacy", "show", "public").any { it in key.lowercase() }
             })
-            ProfileInfoSection("Social links", fields.filter { (key, _) ->
+            ProfileInfoSection("Social", fields.filter { (key, _) ->
                 listOf("social", "twitter", "discord", "fetlife", "onlyfans", "website", "url").any { it in key.lowercase() }
             })
             val classified = fields.filter { (key, _) ->
@@ -387,8 +387,34 @@ private fun formatSeconds(seconds: Long?): String {
                     "social", "twitter", "fetlife", "onlyfans", "website", "url").any { it in k }
             }.map { it.first }.toSet()
             val otherFields = fields.filter { it.first !in classified }
-            if (otherFields.isNotEmpty()) ProfileInfoSection("Other profile details", otherFields)
+            if (otherFields.isNotEmpty()) ProfileInfoSection("Other details", otherFields)
         }
+    }
+}
+
+private fun simpleProfileLabel(key: String): String {
+    val normalized = key.replace(Regex("([a-z0-9])([A-Z])"), "$1 $2")
+        .replace('_', ' ')
+        .replace('-', ' ')
+        .trim()
+        .split(Regex("\\s+"))
+        .joinToString(" ") { word ->
+            when (word.lowercase()) {
+                "id" -> "ID"
+                "url" -> "Link"
+                "api" -> "API"
+                else -> word.replaceFirstChar { it.uppercase() }
+            }
+        }
+    return when (normalized.lowercase()) {
+        "created at", "created date" -> "Joined"
+        "last activity", "last activity at" -> "Last active"
+        "username" -> "Username"
+        "description" -> "About"
+        "timezone" -> "Time zone"
+        "is verified", "verified" -> "Verified"
+        "profile visibility" -> "Visibility"
+        else -> normalized
     }
 }
 
@@ -409,7 +435,7 @@ private fun formatSeconds(seconds: Long?): String {
                 Text("This service does not provide these fields.", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
-                remaining.forEach { (key, value) -> DetailRow(key, value.ifBlank { "Empty" }, compact = true) }
+                remaining.forEach { (key, value) -> DetailRow(simpleProfileLabel(key), value.ifBlank { "Empty" }, compact = true) }
                 if (remaining.isEmpty() && identityKeys.isNotEmpty() && fields.isEmpty()) {
                     Text("No additional fields returned.", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
