@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
     ), content = content)
 }
 
-private enum class Page(val label: String) { Locks("Locks"), History("History"), Profile("Profile"), Settings("Settings") }
+enum class Page(val label: String) { Locks("Locks"), History("History"), Profile("Profile"), Settings("Settings") }
 
 class ChasterViewModel(private val repository: ChasterRepository, private val store: TokenStore) : ViewModel() {
     var page by mutableStateOf(Page.Locks); private set
