@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -191,7 +192,7 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
         OutlinedTextField(
             value = vm.tokenInput, onValueChange = { vm.tokenInput = it },
             label = { Text("Developer token") }, placeholder = { Text("Paste your Chaster token") },
-            singleLine = true, modifier = Modifier.fillMaxWidth()
+            singleLine = true, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(16.dp))
         Button(onClick = vm::saveToken, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
@@ -276,8 +277,9 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
     onAppearance: () -> Unit,
     onDisconnect: () -> Unit
 ) {
+    var replacingToken by remember { mutableStateOf(false) }
     Text("Account", style = MaterialTheme.typography.titleMedium)
-    Text("Your developer token is encrypted on this device. Never share the token or commit it to GitHub.",
+    Text("Your developer token is encrypted on this device and hidden after setup. Never share it or commit it to GitHub.",
         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     OutlinedButton(onClick = onAppearance, modifier = Modifier.fillMaxWidth()) {
         Text("Appearance: " + when (themeMode) {
@@ -288,15 +290,27 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
     }
     Divider()
     Text("Developer token", style = MaterialTheme.typography.titleMedium)
-    OutlinedTextField(value = vm.tokenInput, onValueChange = { vm.tokenInput = it }, modifier = Modifier.fillMaxWidth(),
-        label = { Text("Developer token") }, placeholder = { Text("Paste Chaster token") }, singleLine = true)
-    Button(onClick = vm::saveToken, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) { Text("Save token & reconnect") }
-    OutlinedButton(onClick = onDisconnect, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) { Text("Disconnect and clear token") }
+    if (vm.connected && !replacingToken) {
+        Text("Developer token saved securely", color = MaterialTheme.colorScheme.secondary)
+        OutlinedButton(onClick = { vm.tokenInput = ""; replacingToken = true }, modifier = Modifier.fillMaxWidth()) {
+            Text("Replace developer token")
+        }
+    } else {
+        OutlinedTextField(value = vm.tokenInput, onValueChange = { vm.tokenInput = it }, modifier = Modifier.fillMaxWidth(),
+            label = { Text("Developer token") }, placeholder = { Text("Paste Chaster token") },
+            singleLine = true, visualTransformation = PasswordVisualTransformation())
+        Button(onClick = { vm.saveToken(); replacingToken = false },
+            enabled = !vm.busy && vm.tokenInput.isNotBlank(), modifier = Modifier.fillMaxWidth()) {
+            Text(if (vm.connected) "Save new token & reconnect" else "Save token & connect")
+        }
+    }
+    OutlinedButton(onClick = onDisconnect, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
+        Text("Disconnect and clear token")
+    }
     StatusText(vm.message, vm.busy)
     Text("API requests use HTTPS. The Chaster Public API is in beta, so actions will only be added after their request formats are verified.",
         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
-
 @Composable private fun AppearanceDialog(
     currentMode: ThemeMode,
     onModeSelected: (ThemeMode) -> Unit,
