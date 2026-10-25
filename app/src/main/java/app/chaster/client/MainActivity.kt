@@ -283,11 +283,6 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
                     DetailRow("Minimum duration", lock.minDuration?.let { formatSeconds(it) } ?: (lock.minDate ?: "Not provided by API"))
                     DetailRow("Maximum duration", lock.maxDuration?.let { formatSeconds(it) } ?: (lock.maxDate ?: "Not provided by API"))
                     DetailRow("Requirements", lock.requirements?.toString() ?: "Not provided by API")
-                    if (lock.apiDetails.isNotEmpty()) {
-                        HorizontalDivider()
-                        Text("All available Chaster API fields", style = MaterialTheme.typography.titleMedium)
-                        lock.apiDetails.forEach { (key, value) -> DetailRow(key, value.ifBlank { "Empty" }) }
-                    }
                     Text("Quick actions", style = MaterialTheme.typography.titleMedium)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = { vm.addTime(lock.id, 3600L) }, modifier = Modifier.weight(1f), enabled = !vm.busy) { Text("Add 1 hour") }
