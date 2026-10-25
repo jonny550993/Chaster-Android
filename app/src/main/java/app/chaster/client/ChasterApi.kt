@@ -25,10 +25,16 @@ class ChasterApi(private val token: String) {
             val o = item.asJsonObject
             val id = string(o, "_id", "id", "lockId")
             if (id.isBlank()) return@mapNotNull null
-            ChasterLock(id, string(o, "name", "title").ifBlank { "Chaster lock" },
-                string(o, "status", "state").ifBlank { "Status unavailable" },
-                string(o, "endDate", "end_date", "unlockDate", "unlockAt").takeIf { it.isNotBlank() },
-                string(o, "createdAt", "created_at", "startDate").takeIf { it.isNotBlank() })
+            ChasterLock(
+                id = id,
+                name = string(o, "name", "title").ifBlank { "Chaster lock" },
+                status = string(o, "status", "state").ifBlank { "Status unavailable" },
+                endDate = string(o, "endDate", "end_date", "unlockDate", "unlockAt").takeIf { it.isNotBlank() },
+                createdAt = string(o, "createdAt", "created_at", "startDate", "start_date").takeIf { it.isNotBlank() },
+                minDuration = number(o, "minDuration", "minimumDuration", "min_duration"),
+                maxDuration = number(o, "maxDuration", "maximumDuration", "max_duration"),
+                requirements = number(o, "requirements", "requirementCount", "requirementsCount")?.toInt()
+            )
         }
     }
 
@@ -105,6 +111,16 @@ class ChasterApi(private val token: String) {
                 val nested = value.asJsonObject.get(key)
                 if (nested?.isJsonArray == true) return nested.asJsonArray
             }
+        }
+        return null
+    }
+
+    private fun number(obj: JsonObject, vararg keys: String): Long? {
+        for (key in keys) {
+            val value = obj.get(key) ?: continue
+            if (value.isJsonNull || !value.isJsonPrimitive) continue
+            val parsed = runCatching { value.asLong }.getOrNull()
+            if (parsed != null) return parsed
         }
         return null
     }
