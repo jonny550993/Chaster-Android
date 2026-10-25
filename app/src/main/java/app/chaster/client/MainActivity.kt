@@ -260,8 +260,8 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
                     HorizontalDivider()
                     DetailRow("Start date", lock.createdAt ?: "Not provided by API")
                     DetailRow("End date", lock.endDate ?: "Not provided by API")
-                    DetailRow("Minimum duration", formatSeconds(lock.minDuration))
-                    DetailRow("Maximum duration", formatSeconds(lock.maxDuration))
+                    DetailRow("Minimum duration", lock.minDuration?.let { formatSeconds(it) } ?: (lock.minDate ?: "Not provided by API"))
+                    DetailRow("Maximum duration", lock.maxDuration?.let { formatSeconds(it) } ?: (lock.maxDate ?: "Not provided by API"))
                     DetailRow("Requirements", lock.requirements?.toString() ?: "Not provided by API")
                     Text("Quick actions", style = MaterialTheme.typography.titleMedium)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
