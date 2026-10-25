@@ -106,8 +106,18 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
         locks = repository.locks(); message = "Loaded ${locks.size} lock(s)."
     }
     fun addTime(lockId: String, seconds: Long) = lockAction("Adding time…") { repository.addTime(lockId, seconds) }
+    fun addRandomTime(lockId: String, minSeconds: Long, maxSeconds: Long) {
+        require(minSeconds > 0L && maxSeconds >= minSeconds) { "Invalid random duration range." }
+        val seconds = kotlin.random.Random.nextLong(minSeconds, maxSeconds + 1L)
+        lockAction("Adding a random duration (${formatSeconds(seconds)})…") { repository.addTime(lockId, seconds) }
+    }
     fun increaseMaximum(lockId: String, seconds: Long) = lockAction("Increasing maximum duration…") { repository.increaseMaximum(lockId, seconds) }
     fun increaseMinimum(lockId: String, seconds: Long) = lockAction("Increasing minimum duration…") { repository.increaseMinimum(lockId, seconds) }
+    fun increaseMinimumRandom(lockId: String, minSeconds: Long, maxSeconds: Long) {
+        require(minSeconds > 0L && maxSeconds >= minSeconds) { "Invalid random duration range." }
+        val seconds = kotlin.random.Random.nextLong(minSeconds, maxSeconds + 1L)
+        lockAction("Increasing minimum duration by a random ${formatSeconds(seconds)}…") { repository.increaseMinimum(lockId, seconds) }
+    }
     private fun lockAction(start: String, action: suspend () -> Unit) {
         viewModelScope.launch {
             busy = true; message = start
@@ -265,12 +275,16 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
                     DetailRow("Requirements", lock.requirements?.toString() ?: "Not provided by API")
                     Text("Quick actions", style = MaterialTheme.typography.titleMedium)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { vm.addTime(lock.id, 3600L) }, modifier = Modifier.weight(1f), enabled = !vm.busy) { Text("+1 hour") }
-                        OutlinedButton(onClick = { vm.addTime(lock.id, 86400L) }, modifier = Modifier.weight(1f), enabled = !vm.busy) { Text("+1 day") }
+                        OutlinedButton(onClick = { vm.addTime(lock.id, 3600L) }, modifier = Modifier.weight(1f), enabled = !vm.busy) { Text("Add 1 hour") }
+                        OutlinedButton(onClick = { vm.addTime(lock.id, 86400L) }, modifier = Modifier.weight(1f), enabled = !vm.busy) { Text("Add 1 day") }
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { vm.addRandomTime(lock.id, 3600L, 86400L) }, modifier = Modifier.weight(1f), enabled = !vm.busy) { Text("Random 1–24h") }
                         OutlinedButton(onClick = { vm.increaseMaximum(lock.id, 86400L) }, modifier = Modifier.weight(1f), enabled = !vm.busy) { Text("Max +1 day") }
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = { vm.increaseMinimum(lock.id, 86400L) }, modifier = Modifier.weight(1f), enabled = !vm.busy) { Text("Min +1 day") }
+                        OutlinedButton(onClick = { vm.increaseMinimumRandom(lock.id, 86400L, 604800L) }, modifier = Modifier.weight(1f), enabled = !vm.busy) { Text("Random min +1–7d") }
                     }
                 }
             }
