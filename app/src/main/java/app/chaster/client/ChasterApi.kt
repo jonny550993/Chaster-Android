@@ -32,6 +32,21 @@ class ChasterApi(private val token: String) {
         }
     }
 
+    fun addTime(lockId: String, seconds: Long) {
+        require(seconds > 0) { "Duration must be positive." }
+        postJson("/locks/$lockId/update-time", """{"duration":$seconds}""")
+    }
+
+    fun increaseMaximum(lockId: String, seconds: Long) {
+        require(seconds > 0) { "Duration must be positive." }
+        postJson("/locks/$lockId/max-limit-date", """{"duration":$seconds}""")
+    }
+
+    fun increaseMinimum(lockId: String, seconds: Long) {
+        require(seconds > 0) { "Duration must be positive." }
+        postJson("/locks/$lockId/min-limit-date", """{"duration":$seconds}""")
+    }
+
     fun getProfile(): ChasterProfile {
         val json = get("/auth/profile")
         val o = if (json.isJsonObject && json.asJsonObject.get("user")?.isJsonObject == true)
