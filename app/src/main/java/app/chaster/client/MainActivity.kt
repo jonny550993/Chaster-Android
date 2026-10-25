@@ -3,9 +3,12 @@ package app.chaster.client
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Lock
@@ -17,6 +20,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -32,20 +37,33 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val store = TokenStore(applicationContext)
-        setContent { ChasterTheme { ChasterApp(store) } }
+        setContent { ChasterApp(store) }
     }
 }
 
-@Composable private fun ChasterTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = darkColorScheme(
-        primary = androidx.compose.ui.graphics.Color(0xFFB7C5FF),
-        secondary = androidx.compose.ui.graphics.Color(0xFFB8D8CB),
-        background = androidx.compose.ui.graphics.Color(0xFF101318),
-        surface = androidx.compose.ui.graphics.Color(0xFF191E25)
-    ), content = content)
+private enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
+@Composable private fun ChasterTheme(mode: ThemeMode, content: @Composable () -> Unit) {
+    val dark = when (mode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+    val colors = if (dark) darkColorScheme(
+        primary = Color(0xFFB7C5FF),
+        secondary = Color(0xFFB8D8CB),
+        background = Color(0xFF101318),
+        surface = Color(0xFF191E25)
+    ) else lightColorScheme(
+        primary = Color(0xFF4056A1),
+        secondary = Color(0xFF42685B),
+        background = Color(0xFFF7F7FB),
+        surface = Color(0xFFFFFFFF)
+    )
+    MaterialTheme(colorScheme = colors, content = content)
 }
 
-enum class Page(val label: String) { Locks("Locks"), History("History"), Profile("Profile"), Settings("Settings") }
+private enum class Page(val label: String) { Locks("Locks"), History("History"), Profile("Profile"), Settings("Settings") }
 
 class ChasterViewModel(private val repository: ChasterRepository, private val store: TokenStore) : ViewModel() {
     var page by mutableStateOf(Page.Locks); private set
@@ -54,18 +72,25 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
     var history by mutableStateOf<List<HistoryEntry>>(emptyList()); private set
     var profile by mutableStateOf<ChasterProfile?>(null); private set
     var busy by mutableStateOf(false); private set
-    var message by mutableStateOf("Add a developer token in Settings to connect."); private set
+    var message by mutableStateOf(if (store.read().isBlank()) "Connect your Chaster account to get started." else "Ready to connect.")
+        private set
     var connected by mutableStateOf(store.read().isNotBlank()); private set
     fun navigate(value: Page) { page = value }
     fun saveToken() {
-        store.write(tokenInput); connected = tokenInput.isNotBlank()
-        message = if (connected) "Token saved securely on this device." else "Token cleared."
-        if (connected) refreshLocks()
+        if (tokenInput.isBlank()) {
+            message = "Paste your Chaster developer token first."
+            return
+        }
+        store.write(tokenInput)
+        connected = true
+        message = "Token saved securely. Connecting to Chaster…"
+        refreshLocks()
     }
     fun clearToken() {
         store.clear(); tokenInput = ""; connected = false
         locks = emptyList(); history = emptyList(); profile = null
-        message = "Developer token cleared from this device."
+        page = Page.Locks
+        message = "Disconnected. Your token was cleared from this device."
     }
     fun refreshLocks() = task("Loading locks…") {
         locks = repository.locks(); message = "Loaded ${locks.size} lock(s)."
@@ -78,37 +103,103 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
     private fun task(start: String, action: suspend () -> Unit) {
         viewModelScope.launch {
             busy = true; message = start
-            try { action() } catch (e: Exception) { message = e.message ?: "Request failed. Check API token and permissions." }
-            finally { busy = false }
+            try { action() } catch (e: Exception) {
+                message = e.message ?: "Request failed. Check your token and Chaster API access."
+            } finally { busy = false }
         }
     }
 }
 
 @Composable fun ChasterApp(store: TokenStore) {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("chaster_display_settings", android.content.Context.MODE_PRIVATE) }
+    var themeMode by remember {
+        mutableStateOf(runCatching { ThemeMode.valueOf(prefs.getString("theme_mode", "SYSTEM") ?: "SYSTEM") }.getOrDefault(ThemeMode.SYSTEM))
+    }
+    var showAppearance by remember { mutableStateOf(false) }
     val vm: ChasterViewModel = viewModel(factory = ChasterViewModelFactory(store))
-    Scaffold(bottomBar = {
-        NavigationBar {
-            Page.entries.forEach { page ->
-                val icon = when (page) {
-                    Page.Locks -> Icons.Default.Lock; Page.History -> Icons.Default.History
-                    Page.Profile -> Icons.Default.Person; Page.Settings -> Icons.Default.Settings
+
+    ChasterTheme(themeMode) {
+        if (!vm.connected) {
+            ConnectScreen(vm)
+        } else {
+            Scaffold(bottomBar = {
+                NavigationBar {
+                    Page.entries.forEach { page ->
+                        val icon = when (page) {
+                            Page.Locks -> Icons.Default.Lock
+                            Page.History -> Icons.Default.History
+                            Page.Profile -> Icons.Default.Person
+                            Page.Settings -> Icons.Default.Settings
+                        }
+                        NavigationBarItem(selected = vm.page == page, onClick = { vm.navigate(page) },
+                            icon = { Icon(icon, contentDescription = page.label) }, label = { Text(page.label) })
+                    }
                 }
-                NavigationBarItem(selected = vm.page == page, onClick = { vm.navigate(page) },
-                    icon = { Icon(icon, contentDescription = page.label) }, label = { Text(page.label) })
+            }) { padding ->
+                Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Chaster", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                            Text("Connected account", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        if (vm.page != Page.Settings) {
+                            TextButton(onClick = { vm.navigate(Page.Settings) }) { Text("Settings") }
+                        }
+                    }
+                    when (vm.page) {
+                        Page.Locks -> LocksScreen(vm)
+                        Page.History -> HistoryScreen(vm)
+                        Page.Profile -> ProfileScreen(vm)
+                        Page.Settings -> SettingsScreen(
+                            vm = vm,
+                            themeMode = themeMode,
+                            onAppearance = { showAppearance = true },
+                            onDisconnect = vm::clearToken
+                        )
+                    }
+                }
             }
         }
-    }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("CHASTER", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-            Text(when (vm.page) {
-                Page.Locks -> "Your locks"; Page.History -> "Lock history"
-                Page.Profile -> "Your profile"; Page.Settings -> "Settings"
-            }, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            when (vm.page) {
-                Page.Locks -> LocksScreen(vm); Page.History -> HistoryScreen(vm)
-                Page.Profile -> ProfileScreen(vm); Page.Settings -> SettingsScreen(vm)
-            }
+        if (showAppearance) {
+            AppearanceDialog(
+                currentMode = themeMode,
+                onModeSelected = {
+                    themeMode = it
+                    prefs.edit().putString("theme_mode", it.name).apply()
+                },
+                onDismiss = { showAppearance = false }
+            )
+        }
+    }
+}
+
+@Composable private fun ConnectScreen(vm: ChasterViewModel) {
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(Icons.Default.Lock, null, Modifier.size(44.dp), tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.height(16.dp))
+        Text("Chaster", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        Text("Connect your Chaster account", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(8.dp))
+        Text("Use a personal developer token from Chaster's developer interface. It stays encrypted on this device.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(24.dp))
+        OutlinedTextField(
+            value = vm.tokenInput, onValueChange = { vm.tokenInput = it },
+            label = { Text("Developer token") }, placeholder = { Text("Paste your Chaster token") },
+            singleLine = true, modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = vm::saveToken, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
+            Text(if (vm.busy) "Connecting…" else "Connect")
+        }
+        if (vm.message.isNotBlank()) {
+            Spacer(Modifier.height(12.dp))
+            Text(vm.message, color = if (vm.message.contains("HTTP") || vm.message.contains("failed", true)) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -120,12 +211,12 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
             Text("Lock sessions", style = MaterialTheme.typography.titleMedium)
             Text("${vm.locks.size} loaded", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        OutlinedButton(onClick = vm::refreshLocks, enabled = !vm.busy && vm.connected) {
+        OutlinedButton(onClick = vm::refreshLocks, enabled = !vm.busy) {
             Icon(Icons.Default.Refresh, null, Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text("Refresh")
         }
     }
     StatusText(vm.message, vm.busy)
-    if (vm.locks.isEmpty()) EmptyState("No locks loaded", "Add your developer token in Settings, then refresh your locks.")
+    if (vm.locks.isEmpty()) EmptyState("No locks loaded", "Refresh to load your Chaster locks.")
     else LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         items(vm.locks, key = { it.id }) { lock ->
             ElevatedCard(Modifier.fillMaxWidth()) {
@@ -134,9 +225,8 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
                         Text(lock.name, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         AssistChip(onClick = {}, label = { Text(lock.status) })
                     }
-                    Text("Remaining time: ${countdown(lock.endDate)}", style = MaterialTheme.typography.bodyLarge)
+                    Text("Time remaining: ${countdown(lock.endDate)}", style = MaterialTheme.typography.bodyLarge)
                     lock.endDate?.let { Text("End: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    Text("ID: ${lock.id}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -145,11 +235,11 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
 
 @Composable private fun HistoryScreen(vm: ChasterViewModel) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("Events from your locks", Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Button(onClick = vm::refreshHistory, enabled = !vm.busy && vm.connected) { Text("Load history") }
+        Text("Lock history", Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Button(onClick = vm::refreshHistory, enabled = !vm.busy) { Text("Load history") }
     }
     StatusText(vm.message, vm.busy)
-    if (vm.history.isEmpty()) EmptyState("No history loaded", "Tap Load history to fetch history entries for your locks.")
+    if (vm.history.isEmpty()) EmptyState("No history loaded", "Tap Load history to fetch entries for your locks.")
     else LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(vm.history) { entry ->
             ElevatedCard(Modifier.fillMaxWidth()) {
@@ -166,7 +256,7 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
 @Composable private fun ProfileScreen(vm: ChasterViewModel) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text("Account details", Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Button(onClick = vm::refreshProfile, enabled = !vm.busy && vm.connected) { Text("Refresh") }
+        Button(onClick = vm::refreshProfile, enabled = !vm.busy) { Text("Refresh") }
     }
     StatusText(vm.message, vm.busy)
     val profile = vm.profile
@@ -180,17 +270,59 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
     }
 }
 
-@Composable private fun SettingsScreen(vm: ChasterViewModel) {
-    Text("API connection", style = MaterialTheme.typography.titleMedium)
-    Text("Personal use only. Your developer token is encrypted on this device. Never share an APK with your token embedded.",
+@Composable private fun SettingsScreen(
+    vm: ChasterViewModel,
+    themeMode: ThemeMode,
+    onAppearance: () -> Unit,
+    onDisconnect: () -> Unit
+) {
+    Text("Account", style = MaterialTheme.typography.titleMedium)
+    Text("Your developer token is encrypted on this device. Never share the token or commit it to GitHub.",
         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    OutlinedButton(onClick = onAppearance, modifier = Modifier.fillMaxWidth()) {
+        Text("Appearance: " + when (themeMode) {
+            ThemeMode.SYSTEM -> "System"
+            ThemeMode.LIGHT -> "Light"
+            ThemeMode.DARK -> "Dark"
+        })
+    }
+    Divider()
+    Text("Developer token", style = MaterialTheme.typography.titleMedium)
     OutlinedTextField(value = vm.tokenInput, onValueChange = { vm.tokenInput = it }, modifier = Modifier.fillMaxWidth(),
         label = { Text("Developer token") }, placeholder = { Text("Paste Chaster token") }, singleLine = true)
-    Button(onClick = vm::saveToken, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) { Text("Save token & connect") }
-    OutlinedButton(onClick = vm::clearToken, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) { Text("Clear token") }
+    Button(onClick = vm::saveToken, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) { Text("Save token & reconnect") }
+    OutlinedButton(onClick = onDisconnect, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) { Text("Disconnect and clear token") }
     StatusText(vm.message, vm.busy)
-    Text("Required scope: locks. Profile may require profile scope. Requests use HTTPS; error messages do not print response bodies.",
-        style = MaterialTheme.typography.bodySmall)
+    Text("API requests use HTTPS. The Chaster Public API is in beta, so actions will only be added after their request formats are verified.",
+        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+@Composable private fun AppearanceDialog(
+    currentMode: ThemeMode,
+    onModeSelected: (ThemeMode) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Appearance") },
+        text = {
+            Column {
+                Text("Choose how Chaster should look.")
+                Spacer(Modifier.height(8.dp))
+                ThemeOption("System", ThemeMode.SYSTEM, currentMode, onModeSelected)
+                ThemeOption("Light", ThemeMode.LIGHT, currentMode, onModeSelected)
+                ThemeOption("Dark", ThemeMode.DARK, currentMode, onModeSelected)
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
+    )
+}
+
+@Composable private fun ThemeOption(label: String, mode: ThemeMode, currentMode: ThemeMode, onSelected: (ThemeMode) -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        RadioButton(selected = currentMode == mode, onClick = { onSelected(mode) })
+        TextButton(onClick = { onSelected(mode) }) { Text(label) }
+    }
 }
 
 @Composable private fun StatusText(message: String, busy: Boolean) {
@@ -199,6 +331,7 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
         Text(message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
+
 @Composable private fun EmptyState(title: String, body: String) {
     ElevatedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth().padding(26.dp), horizontalAlignment = Alignment.CenterHorizontally,
@@ -209,6 +342,7 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
         }
     }
 }
+
 private fun countdown(endDate: String?): String {
     if (endDate.isNullOrBlank()) return "Not provided by API"
     val end = try {
@@ -220,6 +354,7 @@ private fun countdown(endDate: String?): String {
     val minutes = (seconds % 3600) / 60; val secs = seconds % 60
     return if (days > 0) "${days}d ${hours}h ${minutes}m" else "%02dh %02dm %02ds".format(hours, minutes, secs)
 }
+
 private class ChasterViewModelFactory(private val store: TokenStore) : androidx.lifecycle.ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T = ChasterViewModel(ChasterRepository(store), store) as T
