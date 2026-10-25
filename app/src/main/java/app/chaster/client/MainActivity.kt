@@ -277,9 +277,8 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
     onAppearance: () -> Unit,
     onDisconnect: () -> Unit
 ) {
-    var replacingToken by remember { mutableStateOf(false) }
     Text("Account", style = MaterialTheme.typography.titleMedium)
-    Text("Your developer token is encrypted on this device and hidden after setup. Never share it or commit it to GitHub.",
+    Text("Your developer token is encrypted on this device and hidden after setup. To change it, disconnect first, then connect again with the new token.",
         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     OutlinedButton(onClick = onAppearance, modifier = Modifier.fillMaxWidth()) {
         Text("Appearance: " + when (themeMode) {
@@ -290,20 +289,7 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
     }
     Divider()
     Text("Developer token", style = MaterialTheme.typography.titleMedium)
-    if (vm.connected && !replacingToken) {
-        Text("Developer token saved securely", color = MaterialTheme.colorScheme.secondary)
-        OutlinedButton(onClick = { vm.tokenInput = ""; replacingToken = true }, modifier = Modifier.fillMaxWidth()) {
-            Text("Replace developer token")
-        }
-    } else {
-        OutlinedTextField(value = vm.tokenInput, onValueChange = { vm.tokenInput = it }, modifier = Modifier.fillMaxWidth(),
-            label = { Text("Developer token") }, placeholder = { Text("Paste Chaster token") },
-            singleLine = true, visualTransformation = PasswordVisualTransformation())
-        Button(onClick = { vm.saveToken(); replacingToken = false },
-            enabled = !vm.busy && vm.tokenInput.isNotBlank(), modifier = Modifier.fillMaxWidth()) {
-            Text(if (vm.connected) "Save new token & reconnect" else "Save token & connect")
-        }
-    }
+    Text("Developer token saved securely", color = MaterialTheme.colorScheme.secondary)
     OutlinedButton(onClick = onDisconnect, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
         Text("Disconnect and clear token")
     }
