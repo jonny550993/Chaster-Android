@@ -158,6 +158,16 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
         LockCountdownWidgetProvider.updateFromLocks(context, vm.locks)
     }
 
+    LaunchedEffect(vm.connected) {
+        if (vm.connected) {
+            vm.refreshLocks()
+            while (true) {
+                delay(60_000L)
+                if (vm.connected && !vm.busy) vm.refreshLocks()
+            }
+        }
+    }
+
     ChasterTheme(themeMode) {
         if (!vm.connected) {
             ConnectScreen(vm)
