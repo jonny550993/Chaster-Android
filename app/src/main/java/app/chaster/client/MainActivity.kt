@@ -148,6 +148,7 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
                         if (vm.page != Page.Settings) {
                             TextButton(onClick = { vm.navigate(Page.Settings) }) { Text("Settings") }
                         }
+                        TextButton(onClick = vm::clearToken, enabled = !vm.busy) { Text("Disconnect") }
                     }
                     when (vm.page) {
                         Page.Locks -> LocksScreen(vm)
