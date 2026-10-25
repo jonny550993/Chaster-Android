@@ -250,22 +250,51 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
     else LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         items(vm.locks, key = { it.id }) { lock ->
             ElevatedCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(lock.name, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(lock.name, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                         AssistChip(onClick = {}, label = { Text(lock.status) })
                     }
-                    Text("Time remaining: ${countdown(lock.endDate)}", style = MaterialTheme.typography.bodyLarge)
-                    lock.endDate?.let { Text("End: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        TextButton(onClick = { vm.addTime(lock.id, 3600L) }, enabled = !vm.busy) { Text("+1 hour") }
-                        TextButton(onClick = { vm.increaseMaximum(lock.id, 86400L) }, enabled = !vm.busy) { Text("Max +1 day") }
-                        TextButton(onClick = { vm.increaseMinimum(lock.id, 86400L) }, enabled = !vm.busy) { Text("Min +1 day") }
+                    Text(countdown(lock.endDate), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+                    Text("Time remaining", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    HorizontalDivider()
+                    DetailRow("Start date", lock.createdAt ?: "Not provided by API")
+                    DetailRow("End date", lock.endDate ?: "Not provided by API")
+                    DetailRow("Minimum duration", formatSeconds(lock.minDuration))
+                    DetailRow("Maximum duration", formatSeconds(lock.maxDuration))
+                    DetailRow("Requirements", lock.requirements?.toString() ?: "Not provided by API")
+                    Text("Quick actions", style = MaterialTheme.typography.titleMedium)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ActionButton("+1 hour", Modifier.weight(1f)) { vm.addTime(lock.id, 3600L) }
+                        ActionButton("+1 day", Modifier.weight(1f)) { vm.addTime(lock.id, 86400L) }
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ActionButton("Max +1 day", Modifier.weight(1f)) { vm.increaseMaximum(lock.id, 86400L) }
+                        ActionButton("Min +1 day", Modifier.weight(1f)) { vm.increaseMinimum(lock.id, 86400L) }
                     }
                 }
             }
         }
     }
+}
+
+@Composable private fun DetailRow(label: String, value: String) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+    }
+}
+
+private fun formatSeconds(seconds: Long?): String {
+    if (seconds == null || seconds < 0L) return "Not provided by API"
+    val days = seconds / 86400
+    val hours = (seconds % 86400) / 3600
+    val minutes = (seconds % 3600) / 60
+    return buildList {
+        if (days > 0) add("${days}d")
+        if (hours > 0) add("${hours}h")
+        if (minutes > 0 || isEmpty()) add("${minutes}m")
+    }.joinToString(" ")
 }
 
 @Composable private fun HistoryScreen(vm: ChasterViewModel) {
