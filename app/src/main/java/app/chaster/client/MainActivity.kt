@@ -120,6 +120,10 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
     var showAppearance by remember { mutableStateOf(false) }
     val vm: ChasterViewModel = viewModel(factory = ChasterViewModelFactory(store))
 
+    LaunchedEffect(vm.locks) {
+        LockCountdownWidgetProvider.updateFromLocks(context, vm.locks)
+    }
+
     ChasterTheme(themeMode) {
         if (!vm.connected) {
             ConnectScreen(vm)
