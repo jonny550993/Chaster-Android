@@ -186,7 +186,7 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
                     }
                 }
             }) { padding ->
-                Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp, vertical = 16.dp),
+                Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
@@ -269,7 +269,7 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
     if (vm.locks.isEmpty()) EmptyState("No locks loaded", "Refresh to load your Chaster locks.")
     else LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         items(vm.locks, key = { it.id }) { lock ->
-            ElevatedCard(Modifier.fillMaxWidth()) {
+            Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(lock.name, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
@@ -330,7 +330,7 @@ private fun formatSeconds(seconds: Long?): String {
     if (vm.history.isEmpty()) EmptyState("No history loaded", "Tap Load history to fetch entries for your locks.")
     else LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(vm.history) { entry ->
-            ElevatedCard(Modifier.fillMaxWidth()) {
+            Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(entry.title, style = MaterialTheme.typography.titleSmall)
                     Text(entry.lockName, color = MaterialTheme.colorScheme.secondary)
@@ -350,7 +350,7 @@ private fun formatSeconds(seconds: Long?): String {
     StatusText(vm.message, vm.busy)
     val profile = vm.profile
     if (profile == null) EmptyState("Profile not loaded", "Tap Refresh to fetch your Chaster account profile.")
-    else ElevatedCard(Modifier.fillMaxWidth()) {
+    else Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(profile.username, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
             Text("Connected with developer token", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -428,7 +428,7 @@ private fun formatSeconds(seconds: Long?): String {
 }
 
 @Composable private fun EmptyState(title: String, body: String) {
-    ElevatedCard(Modifier.fillMaxWidth()) {
+    Card(Modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth().padding(26.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(Icons.Default.Lock, null, Modifier.size(34.dp), tint = MaterialTheme.colorScheme.primary)
