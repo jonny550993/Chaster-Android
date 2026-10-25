@@ -6,8 +6,9 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
-import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 /** Public API adapter. See https://api.chaster.app/api */
@@ -16,7 +17,7 @@ class ChasterApi(private val token: String) {
     private val base = "https://api.chaster.app"
 
     fun getLocks(): List<ChasterLock> {
-        val json = get("/api/locks")
+        val json = get("/locks")
         val array = findArray(json, listOf("items", "data", "locks", "results"))
             ?: throw IOException("Unexpected lock-list response. Check the current Chaster OpenAPI schema.")
         return array.mapNotNull { item ->
@@ -32,7 +33,7 @@ class ChasterApi(private val token: String) {
     }
 
     fun getProfile(): ChasterProfile {
-        val json = get("/api/profile")
+        val json = get("/auth/profile")
         val o = if (json.isJsonObject && json.asJsonObject.get("user")?.isJsonObject == true)
             json.asJsonObject.getAsJsonObject("user") else json.asJsonObject
         return ChasterProfile(string(o, "username", "name", "displayName").ifBlank { "Chaster user" },
@@ -53,9 +54,20 @@ class ChasterApi(private val token: String) {
             }
         }.sortedByDescending { it.date.orEmpty() }
 
+    private fun postJson(path: String, jsonBody: String): JsonElement {
+        val body = jsonBody.toRequestBody("application/json; charset=utf-8".toMediaType())
+        val request = Request.Builder().url("$base$path").header("Authorization", "Bearer $token")
+            .header("Accept", "application/json").post(body).build()
+        return execute(request, path)
+    }
+
     private fun get(path: String): JsonElement {
         val request = Request.Builder().url("$base$path").header("Authorization", "Bearer $token")
             .header("Accept", "application/json").get().build()
+        return execute(request, path)
+    }
+
+    private fun execute(request: Request, path: String): JsonElement {
         client.newCall(request).execute().use { response ->
             val body = response.body?.string().orEmpty()
             if (!response.isSuccessful) throw IOException("Chaster API returned HTTP ${response.code} for $path")
