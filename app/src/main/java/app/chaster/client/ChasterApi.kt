@@ -42,7 +42,7 @@ class ChasterApi(private val token: String) {
 
     fun getHistory(locks: List<ChasterLock>): List<HistoryEntry> =
         locks.flatMap { lock ->
-            val json = get("/api/locks/${lock.id}/history")
+            val json = postJson("/locks/${lock.id}/history", "{}")
             val array = findArray(json, listOf("items", "data", "history", "logs", "results"))
                 ?: throw IOException("Unexpected history response for lock ${lock.id}.")
             array.mapNotNull { item ->
