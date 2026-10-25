@@ -49,7 +49,7 @@ class ChasterApi(private val token: String) {
                 val o = item.asJsonObject
                 HistoryEntry(lock.id, lock.name,
                     string(o, "title", "message", "description", "type").ifBlank { "Lock event" },
-                    string(o, "createdAt", "created_at", "date", "timestamp").ifBlank { null })
+                    string(o, "createdAt", "created_at", "date", "timestamp").takeIf { it.isNotBlank() })
             }
         }.sortedByDescending { it.date.orEmpty() }
 
