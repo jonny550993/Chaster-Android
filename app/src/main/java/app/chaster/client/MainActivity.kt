@@ -96,7 +96,22 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
     fun refreshLocks() = task("Loading locks…") {
         locks = repository.locks(); message = "Loaded ${locks.size} lock(s)."
     }
-    fun refreshProfile() = task("Loading profile…") { profile = repository.profile(); message = "Profile refreshed." }
+    fun addTime(lockId: String, seconds: Long) = lockAction("Adding time…") { repository.addTime(lockId, seconds) }
+    fun increaseMaximum(lockId: String, seconds: Long) = lockAction("Increasing maximum duration…") { repository.increaseMaximum(lockId, seconds) }
+    fun increaseMinimum(lockId: String, seconds: Long) = lockAction("Increasing minimum duration…") { repository.increaseMinimum(lockId, seconds) }
+    private fun lockAction(start: String, action: suspend () -> Unit) {
+        viewModelScope.launch {
+            busy = true; message = start
+            try {
+                action()
+                locks = repository.locks()
+                message = "Action completed and locks refreshed."
+            } catch (e: Exception) {
+                message = e.message ?: "Lock action failed. Check lock permissions and API access."
+            } finally { busy = false }
+        }
+    }
+        fun refreshProfile() = task("Loading profile…") { profile = repository.profile(); message = "Profile refreshed." }
     fun refreshHistory() = task("Loading lock history…") {
         if (locks.isEmpty()) locks = repository.locks()
         history = repository.history(locks); message = "Loaded ${history.size} history event(s)."
@@ -233,6 +248,11 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
                     }
                     Text("Time remaining: ${countdown(lock.endDate)}", style = MaterialTheme.typography.bodyLarge)
                     lock.endDate?.let { Text("End: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        TextButton(onClick = { vm.addTime(lock.id, 3600L) }, enabled = !vm.busy) { Text("+1 hour") }
+                        TextButton(onClick = { vm.increaseMaximum(lock.id, 86400L) }, enabled = !vm.busy) { Text("Max +1 day") }
+                        TextButton(onClick = { vm.increaseMinimum(lock.id, 86400L) }, enabled = !vm.busy) { Text("Min +1 day") }
+                    }
                 }
             }
         }
