@@ -266,7 +266,6 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
     else ElevatedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(profile.username, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-            profile.email?.let { Text(it) }
             Text("Connected with developer token", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
