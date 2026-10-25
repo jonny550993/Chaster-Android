@@ -302,10 +302,10 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
     }
 }
 
-@Composable private fun DetailRow(label: String, value: String) {
+@Composable private fun DetailRow(label: String, value: String, compact: Boolean = false) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Text(label, Modifier.weight(1f), style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -364,8 +364,8 @@ private fun formatSeconds(seconds: Long?): String {
                 val k = key.lowercase()
                 listOf("username", "name", "email", "id", "role", "language", "timezone", "description", "created", "member").any { it in k }
             }, listOf("username", "name", "email", "id", "role", "language", "timezone", "description", "created", "member")) {
-                DetailRow("Username", profile.username)
-                profile.email?.let { DetailRow("Email", it) }
+                DetailRow("Username", profile.username, compact = true)
+                profile.email?.let { DetailRow("Email", it, compact = true) }
             }
             ProfileInfoSection("Session statistics", fields.filter { (key, _) ->
                 listOf("session", "lock", "duration", "lastactivity", "last_activity", "history").any { it in key.lowercase() }
@@ -400,7 +400,7 @@ private fun formatSeconds(seconds: Long?): String {
 ) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             HorizontalDivider()
             identityContent()
             val identityNames = identityKeys.toSet()
@@ -409,7 +409,7 @@ private fun formatSeconds(seconds: Long?): String {
                 Text("This service does not provide these fields.", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
-                remaining.forEach { (key, value) -> DetailRow(key, value.ifBlank { "Empty" }) }
+                remaining.forEach { (key, value) -> DetailRow(key, value.ifBlank { "Empty" }, compact = true) }
                 if (remaining.isEmpty() && identityKeys.isNotEmpty() && fields.isEmpty()) {
                     Text("No additional fields returned.", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
