@@ -347,6 +347,7 @@ private fun formatSeconds(seconds: Long?): String {
 }
 
 @Composable private fun ProfileScreen(vm: ChasterViewModel) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text("Account details", Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
         Button(onClick = vm::refreshProfile, enabled = !vm.busy) { Text("Refresh") }
@@ -366,6 +367,7 @@ private fun formatSeconds(seconds: Long?): String {
                 profile.apiDetails.forEach { (key, value) -> DetailRow(key, value.ifBlank { "Empty" }) }
             }
         }
+    }
     }
 }
 
