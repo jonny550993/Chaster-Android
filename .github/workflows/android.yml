@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   assemble-debug:
@@ -32,19 +32,3 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
-
-      - name: Publish latest debug APK to Releases
-        if: github.event_name != 'pull_request'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: debug-latest
-          target_commitish: ${{ github.sha }}
-          name: Latest Chaster Android Debug Build
-          body: |
-            Automatically updated debug build from the `main` branch.
-
-            This is a test build, not a production release. The successful build confirms the APK compiles; Chaster API sign-in and runtime behavior may still need testing.
-          prerelease: true
-          make_latest: false
-          files: app/build/outputs/apk/debug/*.apk
-          fail_on_unmatched_files: true
