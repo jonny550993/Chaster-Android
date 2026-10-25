@@ -36,7 +36,8 @@ class ChasterApi(private val token: String) {
                 minDate = string(o, "minDate", "min_date", "minLimitDate", "minimumDate").takeIf { it.isNotBlank() },
                 maxDate = string(o, "maxDate", "max_date", "maxLimitDate", "maximumDate").takeIf { it.isNotBlank() },
                 requirements = number(o, "requirements", "requirementCount", "requirementsCount")?.toInt()
-                    ?: countArray(o, "requirements", "requirementLinks")
+                    ?: countArray(o, "requirements", "requirementLinks"),
+                apiDetails = flatten(o)
             )
         }
     }
@@ -61,7 +62,7 @@ class ChasterApi(private val token: String) {
         val o = if (json.isJsonObject && json.asJsonObject.get("user")?.isJsonObject == true)
             json.asJsonObject.getAsJsonObject("user") else json.asJsonObject
         return ChasterProfile(string(o, "username", "name", "displayName").ifBlank { "Chaster user" },
-            string(o, "email").takeIf { it.isNotBlank() })
+            string(o, "email").takeIf { it.isNotBlank() }, flatten(o))
     }
 
     fun getHistory(locks: List<ChasterLock>): List<HistoryEntry> =
@@ -117,6 +118,25 @@ class ChasterApi(private val token: String) {
         }
         return null
     }
+
+    /** Flatten all fields returned by the API so newly available fields are shown automatically. */
+    private fun flatten(obj: JsonObject, prefix: String = ""): List<Pair<String, String>> {
+        val result = mutableListOf<Pair<String, String>>()
+        for ((key, value) in obj.entrySet()) {
+            val label = if (prefix.isBlank()) key else "$prefix.$key"
+            when {
+                value.isJsonNull -> Unit
+                value.isJsonObject -> result.addAll(flatten(value.asJsonObject, label))
+                value.isJsonArray -> result.add(label to value.asJsonArray.joinToString(", ") { element ->
+                    if (element.isJsonObject || element.isJsonArray) element.toString() else element.asStringOrJson()
+                })
+                else -> result.add(label to value.asStringOrJson())
+            }
+        }
+        return result
+    }
+
+    private fun JsonElement.asStringOrJson(): String = try { asString } catch (_: Exception) { toString() }
 
     private fun countArray(obj: JsonObject, vararg keys: String): Int? {
         for (key in keys) {
