@@ -265,12 +265,12 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
                     DetailRow("Requirements", lock.requirements?.toString() ?: "Not provided by API")
                     Text("Quick actions", style = MaterialTheme.typography.titleMedium)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ActionButton("+1 hour", Modifier.weight(1f)) { vm.addTime(lock.id, 3600L) }
-                        ActionButton("+1 day", Modifier.weight(1f)) { vm.addTime(lock.id, 86400L) }
+                        OutlinedButton(onClick = { vm.addTime(lock.id, 3600L) }, modifier = Modifier.weight(1f), enabled = !vm.busy) { Text("+1 hour") }
+                        OutlinedButton(onClick = { vm.addTime(lock.id, 86400L) }, modifier = Modifier.weight(1f), enabled = !vm.busy) { Text("+1 day") }
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ActionButton("Max +1 day", Modifier.weight(1f)) { vm.increaseMaximum(lock.id, 86400L) }
-                        ActionButton("Min +1 day", Modifier.weight(1f)) { vm.increaseMinimum(lock.id, 86400L) }
+                        OutlinedButton(onClick = { vm.increaseMaximum(lock.id, 86400L) }, modifier = Modifier.weight(1f), enabled = !vm.busy) { Text("Max +1 day") }
+                        OutlinedButton(onClick = { vm.increaseMinimum(lock.id, 86400L) }, modifier = Modifier.weight(1f), enabled = !vm.busy) { Text("Min +1 day") }
                     }
                 }
             }
