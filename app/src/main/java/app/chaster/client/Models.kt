@@ -8,6 +8,8 @@ data class ChasterLock(
     val createdAt: String?,
     val minDuration: Long? = null,
     val maxDuration: Long? = null,
+    val minDate: String? = null,
+    val maxDate: String? = null,
     val requirements: Int? = null
 )
 data class ChasterProfile(val username: String, val email: String?)
