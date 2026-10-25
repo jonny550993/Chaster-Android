@@ -342,27 +342,80 @@ private fun formatSeconds(seconds: Long?): String {
 }
 
 @Composable private fun ProfileScreen(vm: ChasterViewModel) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("Account details", Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Button(onClick = vm::refreshProfile, enabled = !vm.busy) { Text("Refresh") }
-    }
-    StatusText(vm.message, vm.busy)
-    val profile = vm.profile
-    if (profile == null) EmptyState("Profile not loaded", "Tap Refresh to fetch your Chaster account profile.")
-    else Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(profile.username, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-            Text("Connected with developer token", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            HorizontalDivider()
-            Text("Profile information from Chaster", style = MaterialTheme.typography.titleMedium)
-            if (profile.apiDetails.isEmpty()) {
-                Text("Chaster returned no additional profile fields.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            } else {
-                profile.apiDetails.forEach { (key, value) -> DetailRow(key, value.ifBlank { "Empty" }) }
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Account profile", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Profile information returned by Chaster", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            OutlinedButton(onClick = vm::refreshProfile, enabled = !vm.busy) { Text("Refresh") }
+        }
+        StatusText(vm.message, vm.busy)
+        val profile = vm.profile
+        if (profile == null) {
+            EmptyState("Profile not loaded", "Tap Refresh to fetch your Chaster account profile.")
+        } else {
+            val fields = profile.apiDetails
+            ProfileInfoSection("Account details", fields.filter { (key, _) ->
+                val k = key.lowercase()
+                listOf("username", "name", "email", "id", "role", "language", "timezone", "description", "created", "member").any { it in k }
+            }, listOf("username", "name", "email", "id", "role", "language", "timezone", "description", "created", "member")) {
+                DetailRow("Username", profile.username)
+                profile.email?.let { DetailRow("Email", it) }
+            }
+            ProfileInfoSection("Session statistics", fields.filter { (key, _) ->
+                listOf("session", "lock", "duration", "lastactivity", "last_activity", "history").any { it in key.lowercase() }
+            })
+            ProfileInfoSection("Ratings and account", fields.filter { (key, _) ->
+                listOf("rating", "subscription", "financial", "verified", "discord").any { it in key.lowercase() }
+            })
+            ProfileInfoSection("Profile visibility", fields.filter { (key, _) ->
+                listOf("visible", "visibility", "privacy", "show", "public").any { it in key.lowercase() }
+            })
+            ProfileInfoSection("Social links", fields.filter { (key, _) ->
+                listOf("social", "twitter", "discord", "fetlife", "onlyfans", "website", "url").any { it in key.lowercase() }
+            })
+            val classified = fields.filter { (key, _) ->
+                val k = key.lowercase()
+                listOf("username", "name", "email", "id", "role", "language", "timezone", "description", "created", "member",
+                    "session", "lock", "duration", "lastactivity", "last_activity", "history", "rating", "subscription",
+                    "financial", "verified", "discord", "visible", "visibility", "privacy", "show", "public",
+                    "social", "twitter", "fetlife", "onlyfans", "website", "url").any { it in k }
+            }.map { it.first }.toSet()
+            val otherFields = fields.filter { it.first !in classified }
+            if (otherFields.isNotEmpty()) ProfileInfoSection("Other profile details", otherFields)
         }
     }
+}
+
+@Composable private fun ProfileInfoSection(
+    title: String,
+    fields: List<Pair<String, String>>,
+    identityKeys: List<String> = emptyList(),
+    identityContent: @Composable ColumnScope.() -> Unit = {}
+) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            HorizontalDivider()
+            identityContent()
+            val identityNames = identityKeys.toSet()
+            val remaining = fields.filterNot { (key, _) -> identityNames.any { it.equals(key, ignoreCase = true) } }
+            if (remaining.isEmpty() && identityKeys.isEmpty()) {
+                Text("This service does not provide these fields.", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                remaining.forEach { (key, value) -> DetailRow(key, value.ifBlank { "Empty" }) }
+                if (remaining.isEmpty() && identityKeys.isNotEmpty() && fields.isEmpty()) {
+                    Text("No additional fields returned.", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
     }
 }
 
