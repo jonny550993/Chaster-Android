@@ -26,8 +26,8 @@ class ChasterApi(private val token: String) {
             if (id.isBlank()) return@mapNotNull null
             ChasterLock(id, string(o, "name", "title").ifBlank { "Chaster lock" },
                 string(o, "status", "state").ifBlank { "Status unavailable" },
-                string(o, "endDate", "end_date", "unlockDate", "unlockAt").ifBlank { null },
-                string(o, "createdAt", "created_at", "startDate").ifBlank { null })
+                string(o, "endDate", "end_date", "unlockDate", "unlockAt").takeIf { it.isNotBlank() },
+                string(o, "createdAt", "created_at", "startDate").takeIf { it.isNotBlank() })
         }
     }
 
@@ -36,7 +36,7 @@ class ChasterApi(private val token: String) {
         val o = if (json.isJsonObject && json.asJsonObject.get("user")?.isJsonObject == true)
             json.asJsonObject.getAsJsonObject("user") else json.asJsonObject
         return ChasterProfile(string(o, "username", "name", "displayName").ifBlank { "Chaster user" },
-            string(o, "email").ifBlank { null })
+            string(o, "email").takeIf { it.isNotBlank() })
     }
 
     fun getHistory(locks: List<ChasterLock>): List<HistoryEntry> =
