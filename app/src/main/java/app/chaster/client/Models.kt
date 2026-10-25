@@ -10,7 +10,8 @@ data class ChasterLock(
     val maxDuration: Long? = null,
     val minDate: String? = null,
     val maxDate: String? = null,
-    val requirements: Int? = null
+    val requirements: Int? = null,
+    val apiDetails: List<Pair<String, String>> = emptyList()
 )
-data class ChasterProfile(val username: String, val email: String?)
+data class ChasterProfile(val username: String, val email: String?, val apiDetails: List<Pair<String, String>> = emptyList())
 data class HistoryEntry(val lockId: String, val lockName: String, val title: String, val date: String?)
