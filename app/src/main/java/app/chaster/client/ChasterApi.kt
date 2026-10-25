@@ -33,7 +33,10 @@ class ChasterApi(private val token: String) {
                 createdAt = string(o, "createdAt", "created_at", "startDate", "start_date").takeIf { it.isNotBlank() },
                 minDuration = number(o, "minDuration", "minimumDuration", "min_duration"),
                 maxDuration = number(o, "maxDuration", "maximumDuration", "max_duration"),
+                minDate = string(o, "minDate", "min_date", "minLimitDate", "minimumDate").takeIf { it.isNotBlank() },
+                maxDate = string(o, "maxDate", "max_date", "maxLimitDate", "maximumDate").takeIf { it.isNotBlank() },
                 requirements = number(o, "requirements", "requirementCount", "requirementsCount")?.toInt()
+                    ?: countArray(o, "requirements", "requirementLinks")
             )
         }
     }
@@ -111,6 +114,14 @@ class ChasterApi(private val token: String) {
                 val nested = value.asJsonObject.get(key)
                 if (nested?.isJsonArray == true) return nested.asJsonArray
             }
+        }
+        return null
+    }
+
+    private fun countArray(obj: JsonObject, vararg keys: String): Int? {
+        for (key in keys) {
+            val value = obj.get(key) ?: continue
+            if (value.isJsonArray) return value.asJsonArray.size()
         }
         return null
     }
