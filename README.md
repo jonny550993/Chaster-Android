@@ -17,7 +17,7 @@ Native Android client built with Kotlin, Jetpack Compose and Material 3.
 4. Open Settings, paste your Chaster developer token and tap Save token & connect.
 
 ## API verification
-Chaster's Public API is in beta. The OpenAPI schema at https://api.chaster.app/api is authoritative. This first pass uses `GET /api/locks`, `GET /api/profile`, and `GET /api/locks/{id}/history`, with common JSON response-envelope parsing. Verify those exact paths and fields against the current schema; update `ChasterApi.kt` if they differ. Profile may require the `profile` scope; locks/history require `locks`.
+Chaster's Public API is in beta. The OpenAPI schema at https://api.chaster.app/api is authoritative. This first pass uses `GET /locks`, `GET /auth/profile`, and `POST /locks/{lockId}/history` (with an empty JSON request body), with common JSON response-envelope parsing. Verify those exact paths and fields against the current schema; update `ChasterApi.kt` if they differ. Profile may require the `profile` scope; locks/history require `locks`.
 
 ## Security
 - The token is not embedded in source or APK.
