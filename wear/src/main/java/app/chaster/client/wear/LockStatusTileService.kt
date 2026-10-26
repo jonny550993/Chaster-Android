@@ -1,11 +1,11 @@
 package app.chaster.client.wear
 
 import android.content.Context
-import androidx.wear.tiles.LayoutElementBuilders
+import androidx.wear.protolayout.LayoutElementBuilders
 import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
-import androidx.wear.tiles.TimelineBuilders
+import androidx.wear.protolayout.TimelineBuilders
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 
