@@ -47,6 +47,7 @@ class WearMainActivity : ComponentActivity() {
                         Text(name, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
                         Text(countdown, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
                         Text(status, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                        CopyableVersion()
                         if (stale) Text("Open phone app to sync", style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center)
                     }
                 }
