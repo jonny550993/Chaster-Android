@@ -10,8 +10,8 @@ android {
         applicationId = "app.chaster.client"
         minSdk = 24
         targetSdk = 35
-        versionCode = 15
-        versionName = "0.2.7"
+        versionCode = 16
+        versionName = "0.2.8"
     }
     buildFeatures { compose = true }
     compileOptions {
