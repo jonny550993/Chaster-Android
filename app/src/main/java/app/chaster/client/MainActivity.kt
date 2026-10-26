@@ -199,6 +199,7 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
                         Column(Modifier.weight(1f)) {
                             Text("Chaster", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                             Text("Connected account", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            CopyableVersion()
                         }
                         if (vm.page != Page.Settings) {
                             TextButton(onClick = { vm.navigate(Page.Settings) }) { Text("Settings") }
@@ -257,6 +258,7 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
         if (vm.message.isNotBlank()) {
             Spacer(Modifier.height(12.dp))
             Text(vm.message, color = if (vm.message.contains("HTTP") || vm.message.contains("failed", true)) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+            CopyableVersion()
         }
     }
 }
