@@ -95,7 +95,7 @@ class ChasterApi(private val token: String) {
     private fun execute(request: Request, path: String): JsonElement {
         client.newCall(request).execute().use { response ->
             val body = response.body?.string().orEmpty()
-            if (!response.isSuccessful) throw IOException("Chaster API returned HTTP ${response.code} for $path")
+            if (!response.isSuccessful) throw ChasterHttpException(response.code, path)
             if (body.isBlank()) throw IOException("Chaster API returned an empty response for $path")
             return try { JsonParser.parseString(body) }
             catch (_: Exception) { throw IOException("Chaster API returned invalid JSON for $path") }
