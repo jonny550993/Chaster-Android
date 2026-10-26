@@ -87,14 +87,30 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
     var connected by mutableStateOf(store.read().isNotBlank()); private set
     fun navigate(value: Page) { page = value }
     fun saveToken() {
-        if (tokenInput.isBlank()) {
+        val candidate = tokenInput.trim()
+        if (candidate.isBlank()) {
             message = "Paste your Chaster developer token first."
             return
         }
-        store.write(tokenInput)
-        connected = true
-        message = "Token saved securely. Connecting to Chaster…"
-        refreshLocks()
+        if (busy) return
+        viewModelScope.launch {
+            busy = true
+            message = "Verifying your Chaster token…"
+            try {
+                val fetchedLocks = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    ChasterApi(candidate).getLocks()
+                }
+                store.write(candidate)
+                locks = fetchedLocks
+                connected = true
+                message = "Token verified. Loaded ${locks.size} lock(s)."
+            } catch (e: Exception) {
+                connected = false
+                message = e.message ?: "Unable to verify token. Check the token and your connection."
+            } finally {
+                busy = false
+            }
+        }
     }
     fun clearToken() {
         store.clear(); tokenInput = ""; connected = false
