@@ -347,25 +347,40 @@ private fun formatSeconds(seconds: Long?): String {
 }
 
 @Composable private fun HistoryScreen(vm: ChasterViewModel) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("Lock history", Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Button(onClick = vm::refreshHistory, enabled = !vm.busy) { Text("Load history") }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.weight(1f)) {
+            Text("History", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text("Events returned by Chaster for your locks", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        OutlinedButton(onClick = vm::refreshHistory, enabled = !vm.busy) {
+            Icon(Icons.Default.Refresh, null, Modifier.size(16.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(if (vm.busy) "Loading…" else "Refresh")
+        }
     }
     StatusText(vm.message, vm.busy)
-    if (vm.history.isEmpty()) EmptyState("No history loaded", "Tap Load history to fetch entries for your locks.")
-    else LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(vm.history) { entry ->
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(entry.title, style = MaterialTheme.typography.titleSmall)
-                    Text(entry.lockName, color = MaterialTheme.colorScheme.secondary)
-                    entry.date?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+    if (vm.history.isEmpty()) {
+        EmptyState("No history yet", "Refresh to load events available from Chaster for your locks.")
+    } else {
+        LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(vm.history) { entry ->
+                Card(Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.Top) {
+                        Icon(Icons.Default.History, null, tint = MaterialTheme.colorScheme.secondary)
+                        Spacer(Modifier.width(10.dp))
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(entry.title, style = MaterialTheme.typography.titleSmall)
+                            Text(entry.lockName, color = MaterialTheme.colorScheme.secondary)
+                            Text(entry.date ?: "Date not provided", style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
                 }
             }
         }
     }
 }
-
 @Composable private fun ProfileScreen(vm: ChasterViewModel) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
@@ -373,8 +388,8 @@ private fun formatSeconds(seconds: Long?): String {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("Account profile", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text("Profile information returned by Chaster", style = MaterialTheme.typography.bodySmall,
+                Text("Profile", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Account information returned by Chaster", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             OutlinedButton(onClick = vm::refreshProfile, enabled = !vm.busy) { Text("Refresh") }

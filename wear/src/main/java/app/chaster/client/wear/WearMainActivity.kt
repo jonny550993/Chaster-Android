@@ -35,12 +35,14 @@ class WearMainActivity : ComponentActivity() {
             val status = prefs.getString("status", "Open Chaster on your phone to sync locks")
                 ?: "Open Chaster on your phone to sync locks"
             val updated = prefs.getLong("updatedAt", 0L)
-            val remaining = end - System.currentTimeMillis()
+            // Recompute the countdown whenever the minute ticker advances.
+            val nowMillis = remember(tick) { System.currentTimeMillis() }
+            val remaining = end - nowMillis
             val countdown = if (end > 0L && remaining > 0L) {
                 val seconds = TimeUnit.MILLISECONDS.toSeconds(remaining)
                 "%dd %02dh %02dm".format(seconds / 86400, (seconds % 86400) / 3600, (seconds % 3600) / 60)
             } else if (end > 0L) "Time is up" else "No active timer"
-            val stale = updated == 0L || System.currentTimeMillis() - updated > 6 * 60 * 60 * 1000L
+            val stale = updated == 0L || nowMillis - updated > 6 * 60 * 60 * 1000L
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     Column(
