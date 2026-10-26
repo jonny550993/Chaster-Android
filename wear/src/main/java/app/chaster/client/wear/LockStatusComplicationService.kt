@@ -6,7 +6,6 @@ import android.content.Intent
 import android.os.SystemClock
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceService
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
-import androidx.wear.watchface.complications.datasource.ComplicationRequestListener
 import androidx.wear.watchface.complications.data.ComplicationData
 import androidx.wear.watchface.complications.data.ComplicationType
 import androidx.wear.watchface.complications.data.PlainComplicationText
@@ -17,7 +16,7 @@ class LockStatusComplicationService : ComplicationDataSourceService() {
 
     override fun onComplicationRequest(
         request: ComplicationRequest,
-        listener: ComplicationRequestListener
+        listener: ComplicationDataSourceService.ComplicationRequestListener
     ) {
         listener.onComplicationData(makeData())
     }
