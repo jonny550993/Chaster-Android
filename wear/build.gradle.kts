@@ -8,11 +8,11 @@ android {
     namespace = "app.chaster.client.wear"
     compileSdk = 35
     defaultConfig {
-        applicationId = "app.chaster.client.wear"
+        applicationId = "app.chaster.client"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.2.4"
+        versionCode = 5
+        versionName = "0.2.5"
     }
     buildFeatures { compose = true }
     compileOptions {
