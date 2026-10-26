@@ -9,9 +9,9 @@ import java.time.OffsetDateTime
 internal object WearStatusSync {
     fun publish(context: Context, name: String, status: String, endMillis: Long?) {
         val request = PutDataMapRequest.create("/lock-status").apply {
-            dataMap.putString("name", name)
-            dataMap.putString("status", status)
-            dataMap.putLong("endMillis", endMillis ?: 0L)
+            dataMap.putString("name", name.take(80))
+            dataMap.putString("status", status.take(80))
+            dataMap.putLong("endMillis", (endMillis ?: 0L).coerceAtLeast(0L))
             dataMap.putLong("updatedAt", System.currentTimeMillis())
         }.setUrgent().asPutDataRequest()
         Wearable.getDataClient(context.applicationContext).putDataItem(request)
