@@ -5,6 +5,7 @@ import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.WearableListenerService
+import androidx.wear.tiles.TileService
 
 class WearStatusListenerService : WearableListenerService() {
     override fun onDataChanged(dataEvents: DataEventBuffer) {
@@ -17,6 +18,7 @@ class WearStatusListenerService : WearableListenerService() {
                 .putString("status", map.getString("status") ?: "Waiting for phone")
                 .putLong("updatedAt", map.getLong("updatedAt", 0L))
                 .apply()
+            TileService.getUpdater(this).requestUpdate(LockStatusTileService::class.java)
         }
     }
 }

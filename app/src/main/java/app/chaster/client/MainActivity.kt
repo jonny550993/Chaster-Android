@@ -156,6 +156,13 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
 
     LaunchedEffect(vm.locks) {
         LockCountdownWidgetProvider.updateFromLocks(context, vm.locks)
+        val lock = vm.locks.firstOrNull()
+        WearStatusSync.publish(
+            context = context,
+            name = lock?.name?.takeIf { it.isNotBlank() } ?: "Chaster",
+            status = lock?.status ?: if (vm.connected) "No active lock" else "Phone disconnected",
+            endMillis = WearStatusSync.parseEndMillis(lock?.endDate)
+        )
     }
 
     LaunchedEffect(vm.connected) {

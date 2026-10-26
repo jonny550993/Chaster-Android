@@ -21,13 +21,14 @@ import java.util.concurrent.TimeUnit
 class WearMainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // The watch is a companion lock screen: account sign-in and credentials stay on the phone.
         setContent {
             var tick by remember { mutableIntStateOf(0) }
             LaunchedEffect(Unit) { while (true) { delay(1000); tick++ } }
             val prefs = remember { getSharedPreferences("wear_status", MODE_PRIVATE) }
             val name = prefs.getString("name", "Chaster") ?: "Chaster"
             val end = prefs.getLong("endMillis", 0L)
-            val status = prefs.getString("status", "Waiting for phone") ?: "Waiting for phone"
+            val status = prefs.getString("status", "Open Chaster on your phone to sync locks") ?: "Open Chaster on your phone to sync locks"
             val updated = prefs.getLong("updatedAt", 0L)
             val remaining = end - System.currentTimeMillis()
             val countdown = if (end > 0L && remaining > 0L) {
@@ -42,11 +43,11 @@ class WearMainActivity : ComponentActivity() {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        Text("Chaster", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+                        Text("Locks", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
                         Text(name, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
                         Text(countdown, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
                         Text(status, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
-                        if (stale) Text("Last sync may be old", style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center)
+                        if (stale) Text("Open phone app to sync", style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center)
                     }
                 }
             }
