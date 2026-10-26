@@ -29,7 +29,13 @@ class SessionMonitorWorker(context: Context, params: WorkerParameters) : Corouti
                 newlySeen.forEachIndexed { index, lock -> notifyNewSession(lock.name, lock.id.hashCode() + index) }
             }
             Result.success()
+        } catch (e: ChasterHttpException) {
+            when {
+                e.statusCode == 429 || e.statusCode >= 500 -> Result.retry()
+                else -> Result.success()
+            }
         } catch (_: Exception) {
+            // Network errors and other transient failures can be retried.
             Result.retry()
         }
     }
