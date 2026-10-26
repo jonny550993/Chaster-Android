@@ -21,14 +21,19 @@ import java.util.concurrent.TimeUnit
 class WearMainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // The watch is a companion lock screen: account sign-in and credentials stay on the phone.
         setContent {
             var tick by remember { mutableIntStateOf(0) }
-            LaunchedEffect(Unit) { while (true) { delay(1000); tick++ } }
+            LaunchedEffect(Unit) {
+                while (true) {
+                    delay(60_000L)
+                    tick++
+                }
+            }
             val prefs = remember { getSharedPreferences("wear_status", MODE_PRIVATE) }
             val name = prefs.getString("name", "Chaster") ?: "Chaster"
             val end = prefs.getLong("endMillis", 0L)
-            val status = prefs.getString("status", "Open Chaster on your phone to sync locks") ?: "Open Chaster on your phone to sync locks"
+            val status = prefs.getString("status", "Open Chaster on your phone to sync locks")
+                ?: "Open Chaster on your phone to sync locks"
             val updated = prefs.getLong("updatedAt", 0L)
             val remaining = end - System.currentTimeMillis()
             val countdown = if (end > 0L && remaining > 0L) {
