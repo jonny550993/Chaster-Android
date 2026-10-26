@@ -36,6 +36,12 @@ class LockCountdownWidgetProvider : AppWidgetProvider() {
                 prefs.edit().putString(KEY_NAME, futureLock.first.name)
                     .putLong(KEY_END_MILLIS, futureLock.second).apply()
             }
+            WearSyncPublisher.publish(
+                context,
+                futureLock?.first?.name ?: if (locks.isEmpty()) "Open Chaster to refresh" else "No active lock",
+                futureLock?.second ?: 0L,
+                if (futureLock == null) "No active lock" else "Active lock"
+            )
             updateAll(context)
         }
 

@@ -23,12 +23,14 @@ jobs:
           gradle-version: "8.11.1"
 
       - name: Assemble debug APK
-        run: gradle :app:assembleDebug
+        run: gradle :app:assembleDebug :wear:assembleDebug
 
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: chaster-android-debug
-          path: app/build/outputs/apk/debug/*.apk
+          name: chaster-android-phone-and-wear-debug
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            wear/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
