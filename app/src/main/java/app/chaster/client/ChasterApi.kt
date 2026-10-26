@@ -13,6 +13,9 @@ import java.util.concurrent.TimeUnit
 
 /** Public API adapter. Endpoint paths are checked against https://api.chaster.app/api. */
 class ChasterApi(private val token: String) {
+    init {
+        require(token.isNotBlank()) { "Chaster access token is required." }
+    }
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(25, TimeUnit.SECONDS)
