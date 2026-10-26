@@ -11,13 +11,12 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
-/** Public API adapter. See https://api.chaster.app/api */
+/** Public API adapter. Endpoint paths are checked against https://api.chaster.app/api. */
 class ChasterApi(private val token: String) {
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(25, TimeUnit.SECONDS)
         .callTimeout(40, TimeUnit.SECONDS)
-        // Avoid silently replaying requests that can change a lock's state.
         .retryOnConnectionFailure(false)
         .build()
     private val base = "https://api.chaster.app"
@@ -30,7 +29,7 @@ class ChasterApi(private val token: String) {
             if (!item.isJsonObject) return@mapNotNull null
             val o = item.asJsonObject
             val id = string(o, "_id", "id", "lockId")
-            if (id.isBlank()) return@mapNotNull null
+            if (!isValidChasterLockId(id)) return@mapNotNull null
             ChasterLock(
                 id = id,
                 name = string(o, "name", "title").ifBlank { "Chaster lock" },
@@ -68,8 +67,9 @@ class ChasterApi(private val token: String) {
 
     fun getProfile(): ChasterProfile {
         val json = get("/auth/profile")
-        val o = if (json.isJsonObject && json.asJsonObject.get("user")?.isJsonObject == true)
-            json.asJsonObject.getAsJsonObject("user") else json.asJsonObject
+        if (!json.isJsonObject) throw IOException("Unexpected profile response. Check the current Chaster OpenAPI schema.")
+        val root = json.asJsonObject
+        val o = if (root.get("user")?.isJsonObject == true) root.getAsJsonObject("user") else root
         return ChasterProfile(string(o, "username", "name", "displayName").ifBlank { "Chaster user" },
             string(o, "email").takeIf { it.isNotBlank() }, flatten(o))
     }
@@ -89,9 +89,8 @@ class ChasterApi(private val token: String) {
             }
         }.sortedByDescending { it.date.orEmpty() }
 
-    /** Prevent a malformed or untrusted lock ID from changing the request path. */
     private fun validateLockId(lockId: String) {
-        require(lockId.matches(Regex("[A-Za-z0-9_-]{1,128}"))) { "Invalid lock ID." }
+        require(isValidChasterLockId(lockId)) { "Invalid lock ID." }
     }
 
     private fun postJson(path: String, jsonBody: String): JsonElement {
@@ -134,7 +133,6 @@ class ChasterApi(private val token: String) {
         return null
     }
 
-    /** Flatten all fields returned by the API so newly available fields are shown automatically. */
     private fun flatten(obj: JsonObject, prefix: String = ""): List<Pair<String, String>> {
         val result = mutableListOf<Pair<String, String>>()
         for ((key, value) in obj.entrySet()) {
@@ -180,3 +178,6 @@ class ChasterApi(private val token: String) {
         return ""
     }
 }
+
+internal fun isValidChasterLockId(lockId: String): Boolean =
+    lockId.matches(Regex("[A-Za-z0-9_-]{1,128}"))

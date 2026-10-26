@@ -17,7 +17,9 @@ Native Android client built with Kotlin, Jetpack Compose and Material 3.
 4. Open Settings, paste your Chaster developer token and tap Save token & connect.
 
 ## API verification
-Chaster's Public API is in beta. The OpenAPI schema at https://api.chaster.app/api is authoritative. This first pass uses `GET /locks`, `GET /auth/profile`, and `POST /locks/{lockId}/history` (with an empty JSON request body), with common JSON response-envelope parsing. Verify those exact paths and fields against the current schema; update `ChasterApi.kt` if they differ. Profile may require the `profile` scope; locks/history require `locks`.
+The current public OpenAPI schema at https://api.chaster.app/api lists `GET /locks`, `GET /auth/profile`, `POST /locks/{lockId}/history`, `POST /locks/{lockId}/update-time`, `POST /locks/{lockId}/max-limit-date`, and `POST /locks/{lockId}/min-limit-date`. This verifies the route/method names, but does not by itself verify every request/response field used by this client. The adapter deliberately reports a clear schema-mismatch error when expected list/history arrays are absent. Recheck request DTOs and response schemas against the OpenAPI spec before relying on lock-changing actions.
+
+The Public API is in beta. Use a developer token with the `profile` scope for profile access and `locks` scope for lock/history operations.
 
 ## Security
 - The token is not embedded in source or APK.
@@ -27,6 +29,7 @@ Chaster's Public API is in beta. The OpenAPI schema at https://api.chaster.app/a
 - API error messages do not include response bodies.
 
 ## References
+- https://api.chaster.app/api
 - https://docs.chaster.app/api/public-api/endpoints/
 - https://docs.chaster.app/api/public-api/developer-token/
 - https://github.com/jonny550993/emlalock-android
