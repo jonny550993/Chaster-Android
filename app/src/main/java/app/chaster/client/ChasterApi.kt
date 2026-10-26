@@ -13,7 +13,13 @@ import java.util.concurrent.TimeUnit
 
 /** Public API adapter. See https://api.chaster.app/api */
 class ChasterApi(private val token: String) {
-    private val client = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(25, TimeUnit.SECONDS).build()
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(25, TimeUnit.SECONDS)
+        .callTimeout(40, TimeUnit.SECONDS)
+        // Avoid silently replaying requests that can change a lock's state.
+        .retryOnConnectionFailure(false)
+        .build()
     private val base = "https://api.chaster.app"
 
     fun getLocks(): List<ChasterLock> {
@@ -43,16 +49,19 @@ class ChasterApi(private val token: String) {
     }
 
     fun addTime(lockId: String, seconds: Long) {
+        validateLockId(lockId)
         require(seconds > 0) { "Duration must be positive." }
         postJson("/locks/$lockId/update-time", """{"duration":$seconds}""")
     }
 
     fun increaseMaximum(lockId: String, seconds: Long) {
+        validateLockId(lockId)
         require(seconds > 0) { "Duration must be positive." }
         postJson("/locks/$lockId/max-limit-date", """{"duration":$seconds}""")
     }
 
     fun increaseMinimum(lockId: String, seconds: Long) {
+        validateLockId(lockId)
         require(seconds > 0) { "Duration must be positive." }
         postJson("/locks/$lockId/min-limit-date", """{"duration":$seconds}""")
     }
@@ -67,6 +76,7 @@ class ChasterApi(private val token: String) {
 
     fun getHistory(locks: List<ChasterLock>): List<HistoryEntry> =
         locks.flatMap { lock ->
+            validateLockId(lock.id)
             val json = postJson("/locks/${lock.id}/history", "{}")
             val array = findArray(json, listOf("items", "data", "history", "logs", "results"))
                 ?: throw IOException("Unexpected history response for lock ${lock.id}.")
@@ -78,6 +88,11 @@ class ChasterApi(private val token: String) {
                     string(o, "createdAt", "created_at", "date", "timestamp").takeIf { it.isNotBlank() })
             }
         }.sortedByDescending { it.date.orEmpty() }
+
+    /** Prevent a malformed or untrusted lock ID from changing the request path. */
+    private fun validateLockId(lockId: String) {
+        require(lockId.matches(Regex("[A-Za-z0-9_-]{1,128}"))) { "Invalid lock ID." }
+    }
 
     private fun postJson(path: String, jsonBody: String): JsonElement {
         val body = jsonBody.toRequestBody("application/json; charset=utf-8".toMediaType())
