@@ -136,17 +136,30 @@ class ChasterApi(private val token: String) {
         return null
     }
 
-    private fun flatten(obj: JsonObject, prefix: String = ""): List<Pair<String, String>> {
+    private fun flatten(
+        obj: JsonObject,
+        prefix: String = "",
+        depth: Int = 0,
+        limit: Int = 500
+    ): List<Pair<String, String>> {
+        // API profile data is remote input. Bound recursion, entry count, and value sizes
+        // so malformed/deep or unexpectedly large responses cannot exhaust the UI process.
+        if (depth >= 8 || limit <= 0) return emptyList()
         val result = mutableListOf<Pair<String, String>>()
         for ((key, value) in obj.entrySet()) {
-            val label = if (prefix.isBlank()) key else "$prefix.$key"
+            if (result.size >= limit) break
+            val label = (if (prefix.isBlank()) key else "$prefix.$key").take(200)
             when {
                 value.isJsonNull -> Unit
-                value.isJsonObject -> result.addAll(flatten(value.asJsonObject, label))
-                value.isJsonArray -> result.add(label to value.asJsonArray.joinToString(", ") { element ->
-                    if (element.isJsonObject || element.isJsonArray) element.toString() else element.asStringOrJson()
-                })
-                else -> result.add(label to value.asStringOrJson())
+                value.isJsonObject -> result.addAll(flatten(value.asJsonObject, label, depth + 1, limit - result.size))
+                value.isJsonArray -> {
+                    val summary = value.asJsonArray.take(50).joinToString(", ") { element ->
+                        if (element.isJsonObject || element.isJsonArray) element.toString().take(500)
+                        else element.asStringOrJson().take(500)
+                    }.take(2000)
+                    result.add(label to summary)
+                }
+                else -> result.add(label to value.asStringOrJson().take(2000))
             }
         }
         return result
