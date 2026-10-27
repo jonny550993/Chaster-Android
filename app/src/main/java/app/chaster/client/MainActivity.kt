@@ -483,7 +483,15 @@ private fun simpleProfileLabel(key: String): String {
                 Text("This service does not provide these fields.", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
-                remaining.forEach { (key, value) -> DetailRow(simpleProfileLabel(key), value.ifBlank { "Empty" }, compact = true) }
+                remaining.take(100).forEach { (key, value) ->
+                    val safeLabel = key.take(120).ifBlank { "Field" }
+                    val safeValue = value.take(2000).ifBlank { "Empty" }
+                    DetailRow(simpleProfileLabel(safeLabel), safeValue, compact = true)
+                }
+                if (remaining.size > 100) {
+                    Text("Some additional profile fields were omitted.", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 if (remaining.isEmpty() && identityKeys.isNotEmpty() && fields.isEmpty()) {
                     Text("No additional fields returned.", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
