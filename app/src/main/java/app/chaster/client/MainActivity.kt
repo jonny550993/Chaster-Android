@@ -103,7 +103,11 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
                 store.write(candidate)
                 locks = fetchedLocks
                 connected = true
-                message = "Token verified. Loaded ${locks.size} lock(s)."
+                message = "Token verified. Refreshing account data…"
+                // Load every data-backed screen immediately after credentials are accepted.
+                runCatching { profile = repository.profile() }
+                runCatching { history = repository.history(locks) }
+                message = "Connected. Loaded ${locks.size} lock(s), profile, and ${history.size} history event(s)."
             } catch (e: Exception) {
                 connected = false
                 message = e.message ?: "Unable to verify token. Check the token and your connection."
@@ -140,7 +144,10 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
             try {
                 action()
                 locks = repository.locks()
-                message = "Action completed and locks refreshed."
+                // Keep the other screens in sync with changes made to the lock.
+                runCatching { profile = repository.profile() }
+                runCatching { history = repository.history(locks) }
+                message = "Action completed. Locks, profile, and history refreshed."
             } catch (e: Exception) {
                 message = e.message ?: "Lock action failed. Check lock permissions and API access."
             } finally { busy = false }
