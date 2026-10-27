@@ -351,12 +351,7 @@ private fun formatSeconds(seconds: Long?): String {
     if (seconds == null || seconds < 0L) return "Not provided by API"
     val days = seconds / 86400
     val hours = (seconds % 86400) / 3600
-    val minutes = (seconds % 3600) / 60
-    return buildList {
-        if (days > 0) add("${days}d")
-        if (hours > 0) add("${hours}h")
-        if (minutes > 0 || isEmpty()) add("${minutes}m")
-    }.joinToString(" ")
+    return "${days}d ${hours}h"
 }
 
 @Composable private fun HistoryScreen(vm: ChasterViewModel) {
@@ -577,9 +572,9 @@ private fun countdown(endDate: String?): String {
     } catch (_: Exception) { return "See end date" }
     val seconds = Duration.between(Instant.now(), end).seconds
     if (seconds <= 0) return "Ended or unavailable"
-    val days = seconds / 86400; val hours = (seconds % 86400) / 3600
-    val minutes = (seconds % 3600) / 60; val secs = seconds % 60
-    return if (days > 0) "${days}d ${hours}h ${minutes}m" else "%02dh %02dm %02ds".format(hours, minutes, secs)
+    val days = seconds / 86400
+    val hours = (seconds % 86400) / 3600
+    return "${days}d ${hours}h"
 }
 
 private class ChasterViewModelFactory(private val store: TokenStore) : androidx.lifecycle.ViewModelProvider.Factory {
