@@ -300,8 +300,8 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(lock.name, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                        AssistChip(onClick = {}, label = { Text(lock.status) })
+                        Text("Session active", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                        AssistChip(onClick = {}, label = { Text("Locked") })
                     }
                     Text(countdown(lock.endDate), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
                     Text("Time remaining", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
