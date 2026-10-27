@@ -310,10 +310,10 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
                     Text(countdown(lock.endDate), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
                     Text("Time remaining", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     HorizontalDivider()
-                    DetailRow("Start date", lock.createdAt ?: "Not provided by API")
-                    DetailRow("End date", lock.endDate ?: "Not provided by API")
-                    DetailRow("Minimum duration", lock.minDuration?.let { formatSeconds(it) } ?: (lock.minDate ?: "Not provided by API"))
-                    DetailRow("Maximum duration", lock.maxDuration?.let { formatSeconds(it) } ?: (lock.maxDate ?: "Not provided by API"))
+                    DetailRow("Start date", formatApiDate(lock.createdAt))
+                    DetailRow("End date", formatApiDate(lock.endDate))
+                    DetailRow("Minimum duration", lock.minDuration?.let { formatSeconds(it) } ?: formatApiDate(lock.minDate))
+                    DetailRow("Maximum duration", lock.maxDuration?.let { formatSeconds(it) } ?: formatApiDate(lock.maxDate))
                     DetailRow("Requirements", lock.requirements?.toString() ?: "Not provided by API")
                     Text("Quick actions", style = MaterialTheme.typography.titleMedium)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -339,6 +339,16 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
         Text(label, Modifier.weight(1f), style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
     }
+}
+
+private fun formatApiDate(value: String?): String {
+    if (value.isNullOrBlank()) return "Not provided by API"
+    val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        .withZone(java.time.ZoneId.systemDefault())
+    val parsed = runCatching { java.time.Instant.parse(value) }.getOrNull()
+        ?: runCatching { java.time.OffsetDateTime.parse(value).toInstant() }.getOrNull()
+        ?: runCatching { java.time.LocalDateTime.parse(value).atZone(java.time.ZoneId.systemDefault()).toInstant() }.getOrNull()
+    return parsed?.let { formatter.format(it) } ?: value
 }
 
 private fun formatSeconds(seconds: Long?): String {
