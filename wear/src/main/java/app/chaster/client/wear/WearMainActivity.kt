@@ -15,6 +15,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
 import java.util.concurrent.TimeUnit
 
@@ -23,10 +26,13 @@ class WearMainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             var tick by remember { mutableIntStateOf(0) }
-            LaunchedEffect(Unit) {
-                while (true) {
-                    delay(60_000L)
-                    tick++
+            val lifecycleOwner = LocalLifecycleOwner.current
+            LaunchedEffect(lifecycleOwner) {
+                lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                    while (true) {
+                        delay(60_000L)
+                        tick++
+                    }
                 }
             }
             val prefs = remember { getSharedPreferences("wear_status", MODE_PRIVATE) }
@@ -35,7 +41,7 @@ class WearMainActivity : ComponentActivity() {
             val status = prefs.getString("status", "Open Chaster on your phone to sync locks")
                 ?: "Open Chaster on your phone to sync locks"
             val updated = prefs.getLong("updatedAt", 0L)
-            // Recompute the countdown whenever the minute ticker advances.
+            // Recompute the countdown once per minute only while the screen is visible.
             val nowMillis = remember(tick) { System.currentTimeMillis() }
             val remaining = end - nowMillis
             val countdown = if (end > 0L && remaining > 0L) {
