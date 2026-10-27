@@ -343,7 +343,7 @@ class ChasterViewModel(private val repository: ChasterRepository, private val st
 
 private fun formatApiDate(value: String?): String {
     if (value.isNullOrBlank()) return "Not provided by API"
-    val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+    val formatter = java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")
         .withZone(java.time.ZoneId.systemDefault())
     val parsed = runCatching { java.time.Instant.parse(value) }.getOrNull()
         ?: runCatching { java.time.OffsetDateTime.parse(value).toInstant() }.getOrNull()
