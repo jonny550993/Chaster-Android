@@ -10,8 +10,8 @@ android {
         applicationId = "app.chaster.client"
         minSdk = 24
         targetSdk = 35
-        versionCode = 22
-        versionName = "0.3.4"
+        versionCode = 23
+        versionName = "0.3.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
